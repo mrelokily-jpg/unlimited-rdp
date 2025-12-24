@@ -1,0 +1,53 @@
+name: RDP
+on:
+  workflow_dispatch:
+jobs:
+  secure-rdp:
+    runs-on: windows-latest
+    timeout-minutes: 30  # قلل المهلة لـ 30 دقيقة فقط
+    steps:
+      # ... (جميع الخطوات السابقة تبقى كما هي حتى Verify RDP Accessibility)
+      
+      - name: Verify RDP Accessibility
+        run: |
+          Write-Host "Tailscale IP: $env:TAILSCALE_IP"
+          $testResult = Test-NetConnection -ComputerName $env:TAILSCALE_IP -Port 3389
+          if (-not $testResult.TcpTestSucceeded) {
+              Write-Error "TCP connection to RDP port 3389 failed"
+              exit 1
+          }
+          Write-Host "TCP connectivity successful!"
+
+      - name: Display Connection Info and Complete
+        run: |
+          Write-Host "`n" + ("="*50)
+          Write-Host "RDP SETUP COMPLETED SUCCESSFULLY!"
+          Write-Host "="*50
+          Write-Host "`nCONNECTION DETAILS:"
+          Write-Host "Address: $env:TAILSCALE_IP"
+          Write-Host "Username: TOOLBOXLAP"
+          Write-Host "Password: admin@123"
+          Write-Host "`nNOTES:"
+          Write-Host "1. You can now connect via Remote Desktop"
+          Write-Host "2. This session will remain active while the runner is alive"
+          Write-Host "3. Typically available for 60-360 minutes"
+          Write-Host "="*50
+          
+          # حفظ المعلومات في ملف للرجوع إليها
+          $infoFile = "C:\RDP-Connection-Info.txt"
+          $infoContent = @"
+RDP Connection Information
+==========================
+Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
+Tailscale IP: $env:TAILSCALE_IP
+Username: TOOLBOXLAP
+Password: admin@123
+
+Instructions:
+1. Open Remote Desktop Connection (mstsc.exe)
+2. Enter the Tailscale IP above
+3. Use credentials above when prompted
+"@
+          
+          $infoContent | Out-File -FilePath $infoFile -Encoding UTF8
+          Write-Host "`nInfo saved to: $infoFile"
